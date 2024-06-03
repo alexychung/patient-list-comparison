@@ -1,9 +1,12 @@
 import tkinter as tk
-from ImportFileHelper import import_file
+from FileHelper import *
 from functools import partial
 
 HEIGHT = 300
 WIDTH = 500
+
+INSURANCELIST = None
+ACTIVEPATIENTLIST = None
 
 root = tk.Tk()
 
@@ -25,6 +28,7 @@ insuranceframe.pack(fill = "x")
 patientframe = tk.Frame(buttonframe)
 patientframe.pack(fill = "x")
 
+global insurance_text, patient_text
 insurance_text = tk.Label(insuranceframe)
 insurance_button = tk.Button(insuranceframe, text="Select Insurance List File", command=partial(import_file, insurance_text))
 insurance_button.pack(side = "left")
@@ -35,6 +39,6 @@ patient_button = tk.Button(patientframe, text="Select Patient List File", comman
 patient_button.pack(side = "left")
 patient_text.pack(side = "left")
 
-generate_button = tk.Button(downframe, text="Generate Lists", command=)
+#generate_button = tk.Button(downframe, text="Generate Lists", command=partial())
 
 root.mainloop()
