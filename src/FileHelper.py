@@ -3,6 +3,9 @@ import pandas as pd
 import os
 import csv
 
+from pymongo import MongoClient
+
+
 INSURANCELIST = None
 ACTIVEPATIENTLIST = None
 isInsurance = False
