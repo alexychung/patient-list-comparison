@@ -5,6 +5,9 @@ from functools import partial
 
 class MyWindow:
     def __init__(self, parent):
+
+        helper = FileHelper()
+
         self.parent = parent
 
         self.HEIGHT = 300
@@ -29,16 +32,16 @@ class MyWindow:
         patientframe.pack(fill = "x")
 
         insurance_text = tk.Label(insuranceframe)
-        insurance_button = tk.Button(insuranceframe, text="Select Insurance List File", command=partial(import_file, insurance_text, "insurance"))
+        insurance_button = tk.Button(insuranceframe, text="Select Insurance List File", command=partial(helper.import_file, insurance_text, "insurance"))
         insurance_button.pack(side = "left")
         insurance_text.pack(side = "left")
 
         patient_text = tk.Label(patientframe)
-        patient_button = tk.Button(patientframe, text="Select Patient List File", command=partial(import_file, patient_text, "activepatient"))
+        patient_button = tk.Button(patientframe, text="Select Patient List File", command=partial(helper.import_file, patient_text, "activepatient"))
         patient_button.pack(side = "left")
         patient_text.pack(side = "left")
 
-        generate_button = tk.Button(downframe, text="Generate Lists", command=generate_lists)
+        generate_button = tk.Button(downframe, text="Generate Lists", command=helper.generate_lists)
         generate_button.pack(side = "top")
 
 if __name__ == '__main__':
