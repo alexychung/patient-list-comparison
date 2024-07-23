@@ -1,8 +1,8 @@
 import sqlite3
 from sqlalchemy import create_engine
-import pandas
+import pandas as pd
 import FileHelper
-from IPython.display import display
+import win32com.client as win32
 
 class DatabaseDriver:
 
@@ -111,61 +111,71 @@ class DatabaseDriver:
 
 
     def getOnBothLists(self):
-        query = """INSERT INTO OnBothLists
+        query = """
                 SELECT a.firstname, a.lastname, a.dob, a.attributedprovider FROM ActivePatients AS a LEFT JOIN Insurance AS i 
-                ON UPPER(a.firstname) LIKE UPPER(concat('%', i.firstname, '%')) AND UPPER(a.lastname) LIKE UPPER(concat('%', i.lastname, '%')) AND a.dob = i.dob
+                ON (UPPER(a.firstname) LIKE UPPER(concat('%', i.firstname, '%')) OR UPPER(i.firstname) LIKE UPPER(concat('%', a.firstname, '%')))
+                AND (UPPER(a.lastname) LIKE UPPER(concat('%', i.lastname, '%')) OR UPPER(i.lastname) LIKE UPPER(concat('%', a.lastname, '%')))
+                AND a.dob = i.dob
                 WHERE i.firstname IS NOT NULL
                 """
         try:
             self.connect()
-            cursor = self.connection.cursor()
-            cursor.execute(query)
-            self.commit()
+            df = pd.read_sql_query(query, self.connection)
             self.disconnect()
+            return df
         except sqlite3.Error as e:
             print(e)
 
     def getInsuranceNotActive(self):
-        self.getOnBothLists()
-        query = """INSERT INTO InsuranceOnly
-            """
+        query = """
+                SELECT i.firstname, i.lastname, i.dob, i.attributedprovider FROM Insurance AS i LEFT JOIN ActivePatients AS a 
+                ON (UPPER(a.firstname) LIKE UPPER(concat('%', i.firstname, '%')) OR UPPER(i.firstname) LIKE UPPER(concat('%', a.firstname, '%')))
+                AND (UPPER(a.lastname) LIKE UPPER(concat('%', i.lastname, '%')) OR UPPER(i.lastname) LIKE UPPER(concat('%', a.lastname, '%')))
+                AND a.dob = i.dob
+                WHERE a.firstname IS NULL
+                """
         try:
             self.connect()
-            cursor = self.connection.cursor()
-            cursor.execute(query)
-            self.commit()
+            df = pd.read_sql_query(query, self.connection)
             self.disconnect()
+            return df
         except sqlite3.Error as e:
             print(e)
     
 
     def getActiveNotInsurance(self):
         self.getOnBothLists()
-        query = """INSERT INTO ActivePatientsOnly
-            """
+        query = """
+                SELECT a.firstname, a.lastname, a.dob, a.attributedprovider FROM ActivePatients AS a LEFT JOIN Insurance AS i 
+                ON (UPPER(a.firstname) LIKE UPPER(concat('%', i.firstname, '%')) OR UPPER(i.firstname) LIKE UPPER(concat('%', a.firstname, '%')))
+                AND (UPPER(a.lastname) LIKE UPPER(concat('%', i.lastname, '%')) OR UPPER(i.lastname) LIKE UPPER(concat('%', a.lastname, '%')))
+                AND a.dob = i.dob
+                WHERE i.firstname IS NULL
+                """
         try:
             self.connect()
-            cursor = self.connection.cursor()
-            cursor.execute(query)
-            self.commit()
+            df = pd.read_sql_query(query, self.connection)
             self.disconnect()
+            return df
         except sqlite3.Error as e:
             print(e)
 
+    def generateOutput(self, filepath):
+        writer = pd.ExcelWriter(filepath)
+        onBoth = self.getOnBothLists()
+        activeOnly = self.getActiveNotInsurance()
+        insuranceOnly = self.getInsuranceNotActive()
+        onBoth.to_excel(writer, 'Overlap')
+        activeOnly.to_excel(writer, 'Active Only')
+        insuranceOnly.to_excel(writer, 'Insurance Only')
+        writer.close()
+    
+    def setup(self):
+        self.clearTables()
+        self.create_sqlite_db()
+        self.create_tables()
 
+    def insertTables(self, activepatients, insurance):
+        self.insertActivePatientDFIntoTable(activepatients)
+        self.insertInsuranceDFIntoTable(insurance)
 
-
-
-
-if __name__ == '__main__':
-    fh = FileHelper.FileHelper()
-    database = DatabaseDriver(fh)
-    database.clearTables()
-    database.create_sqlite_db()
-    database.create_tables()
-    adf = pandas.read_excel(io='ActivePatientTest.xlsx', names = ["firstname", "lastname", "dob", "attributedprovider"])
-    idf = pandas.read_excel(io='InsuranceTest.xlsx', names = ["firstname", "lastname", "dob", "attributedprovider"])
-    fh.rename_columns(idf)
-    database.insertActivePatientDFIntoTable(adf)
-    database.insertInsuranceDFIntoTable(idf)
-    database.getOnBothLists()

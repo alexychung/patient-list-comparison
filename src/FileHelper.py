@@ -1,7 +1,7 @@
 from tkinter import messagebox, filedialog
 import pandas as pd
 import os
-import sqlite3
+import DatabaseDriver
 
 from pymongo import MongoClient
 
@@ -25,13 +25,9 @@ class FileHelper:
             labelToSet.config(text = file_path)
             if (listname == "insurance"):
                 self.INSURANCELIST = self.reading_spreadsheet(file_path)
-                print("insurance:")
-                print(self.INSURANCELIST.head())
                 self.isInsurance = True
             elif (listname == "activepatient"):
                 self.ACTIVEPATIENTLIST = self.reading_spreadsheet(file_path)
-                print("activepatient:")
-                print(self.ACTIVEPATIENTLIST.head())
                 self.isPatients = True
 
     def get_file_name_from_path(self, filepath):
@@ -42,21 +38,29 @@ class FileHelper:
         
 
     def reading_spreadsheet(self, spreadsheetpath):
-        data = pd.read_excel(spreadsheetpath)
+        data = pd.read_excel(io=spreadsheetpath, names = ["firstname", "lastname", "dob", "attributedprovider"])
+        data['dob'] = pd.to_datetime(data['dob']).dt.date
         return data
-    
-    def rename_columns(self, dataframe):
-        dataframe.rename(columns={'First Name': 'firstname', 'Last Name': 'lastname', 'DOB': 'dob', 'Attributed Provider': 'attributedprovider'})
 
     def generate_lists(self):
-        print(self.INSURANCELIST.head(n=5))
+        if self.checkHasLists() == False:
+            return False
+        
+        fln = self.getSaveFilePath()
+
+        driver = DatabaseDriver.DatabaseDriver(self)
+        driver.setup()
+        driver.insertTables(self.ACTIVEPATIENTLIST, self.INSURANCELIST)
+        driver.generateOutput(fln)
+
+    def checkHasLists(self):
         if self.isInsurance == False or self.isPatients == False:
             messagebox.showerror("Files Not Provided", "Please provide a .xlsx file for both lists ")
             return False
-        
+    
+    def getSaveFilePath(self):
         fln = filedialog.asksaveasfilename(initialdir=os.getcwd(), title="Save Excel File", filetypes=(("Excel File", ".xlsx"), ("All Files", ".*")))
         fle = ".xlsx"
         fln = fln if fln[-len(fle):].lower() == fle else fln + fle
-        print(fln)
-        with pd.ExcelWriter(fln) as writer:
-            self.INSURANCELIST.to_excel(writer, sheet_name='List')
+        return fln
+    
