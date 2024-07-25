@@ -3,8 +3,6 @@ import pandas as pd
 import os
 import DatabaseDriver
 
-from pymongo import MongoClient
-
 class FileHelper:
 
     INSURANCELIST = None

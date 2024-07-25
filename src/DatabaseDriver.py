@@ -2,7 +2,6 @@ import sqlite3
 from sqlalchemy import create_engine
 import pandas as pd
 import FileHelper
-import win32com.client as win32
 
 class DatabaseDriver:
 
